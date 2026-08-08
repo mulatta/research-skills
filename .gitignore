@@ -1,3 +1,10 @@
+__pycache__/
+*.egg-info/
 .direnv/
+dist/
+.pytest_cache/
+.pixi/
+.ruff_cache/
+.venv/
 result
 result-*

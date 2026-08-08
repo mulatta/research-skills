@@ -23,6 +23,7 @@ npx skills add mulatta/research-skills --skill pymol-cli
 For cross-platform non-Nix development/runtime checks, use Pixi from a checkout:
 
 ```bash
+cd pymol-cli
 pixi run check
 pixi run pymol-cli engine start --headless
 ```
