@@ -11,6 +11,9 @@ license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = []
 
+[project.scripts]
+pymol-engine = "pymol_cli.lifecycle.serve:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["pymol_cli"]
 
