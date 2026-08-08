@@ -3,15 +3,16 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
-    {
+    inputs@{
       self,
       nixpkgs,
       treefmt-nix,
+      ...
     }:
     let
       systems = [
@@ -20,9 +21,11 @@
         "aarch64-darwin"
       ];
 
+      inherit (nixpkgs) lib;
+
       eachSystem =
         f:
-        nixpkgs.lib.genAttrs systems (
+        lib.genAttrs systems (
           system:
           f {
             inherit system;
@@ -31,25 +34,33 @@
         );
 
       treefmtEval = eachSystem (
-        { pkgs, ... }:
-        treefmt-nix.lib.evalModule pkgs {
-          projectRootFile = "flake.nix";
-          programs = {
-            deadnix.enable = true;
-            nixfmt.enable = true;
-            statix.enable = true;
-          };
-        }
+        { pkgs, ... }: treefmt-nix.lib.evalModule pkgs (import ./nix/treefmt.nix { inherit pkgs; })
       );
     in
     {
+      packages = eachSystem ({ pkgs, ... }: pkgs.callPackages ./nix/packages.nix { });
+
       checks = eachSystem (
         { system, ... }:
-        {
-          formatting = treefmtEval.${system}.config.build.check self;
+        import ./nix/checks.nix {
+          inherit lib;
+          packages = self.packages.${system};
+          treefmtCheck = treefmtEval.${system}.config.build.check self;
         }
       );
 
       formatter = eachSystem ({ system, ... }: treefmtEval.${system}.config.build.wrapper);
+
+      devShells = eachSystem (
+        { pkgs, system, ... }:
+        import ./devshell.nix {
+          inherit pkgs;
+          formatter = treefmtEval.${system}.config.build.wrapper;
+        }
+      );
+
+      homeModules = import ./nix/home-modules.nix { inherit self inputs lib; } // {
+        default = import ./nix/home-manager.nix { inherit self inputs; };
+      };
     };
 }
