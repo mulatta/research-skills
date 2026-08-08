@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from pymol_cli.engine.embedded import EmbeddedPyMOLAdapter
 from pymol_cli.engine.service import EngineService
 
-__all__ = ["EngineService"]
+__all__ = ["EmbeddedPyMOLAdapter", "EngineService"]
