@@ -6,12 +6,14 @@ build-backend = "hatchling.build"
 name = "pymol-cli"
 version = "0.1.0"
 description = "Agent-oriented CLI and MCP adapter for controlling live PyMOL sessions"
+readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = []
 
 [project.scripts]
+pymol-cli = "pymol_cli.main:main"
 pymol-engine = "pymol_cli.lifecycle.serve:main"
 
 [tool.hatch.build.targets.wheel]
