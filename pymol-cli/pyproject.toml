@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pymol-cli"
+version = "0.1.0"
+description = "Agent-oriented CLI and MCP adapter for controlling live PyMOL sessions"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["pymol_cli"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+ignore = ["UP022"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
