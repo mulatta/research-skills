@@ -15,6 +15,7 @@ dependencies = []
 [project.scripts]
 pymol-cli = "pymol_cli.main:main"
 pymol-engine = "pymol_cli.lifecycle.serve:main"
+pymol-mcp = "pymol_cli.mcp:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["pymol_cli"]

@@ -150,6 +150,7 @@ operation does not exist or the user explicitly asks for raw PyMOL/PML behavior.
 
 ## Security boundaries
 
+- MCP never exposes raw PML, Python execution, or session restore.
 - Typed structure loading passes an explicit allowlisted parser to PyMOL; file
   extensions that PyMOL could execute (`.py`, `.pml`, `.pse`) are rejected.
 - CLI `session restore` is trusted-local-file functionality, not a safe import
@@ -163,6 +164,38 @@ operation does not exist or the user explicitly asks for raw PyMOL/PML behavior.
   PID-only fallback. Stale descriptors therefore cannot kill a reused PID.
 - Authenticated initialization returns server-owned `instance_id`; clients compare it
   with their descriptor snapshot before issuing domain operations.
+
+## MCP adapter
+
+Start PyMOL first, then run the stdio MCP adapter from your MCP client:
+
+```bash
+pymol-cli engine start
+pymol-mcp
+```
+
+The MCP adapter exposes the typed engine operations only:
+
+```text
+atoms_count
+structure_load
+objects_list
+scene_show
+scene_hide
+scene_color
+scene_zoom
+scene_label_residues
+render_png
+session_summary
+session_clear
+session_save
+```
+
+Raw PML is intentionally not exposed through MCP. Use the CLI-only
+`pymol-cli unsafe command ...` escape hatch when raw PyMOL commands are
+explicitly required. Pass `--descriptor PATH` to `pymol-mcp` if the engine was
+started with a non-default descriptor. Tool calls remain FIFO while cancellation
+notifications stay responsive during long renders or queued work.
 
 ## Legacy XML-RPC commands
 
