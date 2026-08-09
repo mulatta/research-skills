@@ -149,7 +149,7 @@ class EmbeddedPyMOLAdapter:
         self.cmd.load(path, format="pse")
 
     def execute_pml(self, command: str) -> Any:
-        return self.cmd.do(command)
+        return self._require_renderer().execute_pml(command)
 
     def clear(self) -> None:
         self.cmd.delete("all")

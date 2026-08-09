@@ -8,7 +8,9 @@ import sys
 import time
 from pathlib import Path
 
-from pymol_cli.rpc.client import EngineClient
+import pytest
+
+from pymol_cli.rpc.client import EngineClient, EngineClientError
 from pymol_cli.rpc.descriptor import EngineDescriptor, read_descriptor
 
 
@@ -40,7 +42,15 @@ def test_current_process_serve_controls_pymol_cmd(tmp_path: Path) -> None:
 
         with EngineClient.connect_descriptor(descriptor_path) as client:
             assert client.unsafe_execute_pml("fragment ala, smoke")["revision"] == 1
-            assert client.count_atoms("smoke")["count"] == 10
+            with pytest.raises(EngineClientError, match="PyMOL backend"):
+                client.unsafe_execute_pml(
+                    "label smoke, resn; fragment ala, must_not_be_created"
+                )
+            assert client.session_summary() == {
+                "object_names": ["smoke"],
+                "atom_count": 10,
+                "revision": 1,
+            }
             assert client.shutdown() == {"ok": True}
 
         stdout, stderr = proc.communicate(timeout=5)

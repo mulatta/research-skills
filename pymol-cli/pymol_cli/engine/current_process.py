@@ -24,6 +24,7 @@ from pymol_cli.engine.validation import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+_PML_OUTPUT_LOCK = threading.Lock()
 
 
 class _RenderProcess(Protocol):
@@ -267,10 +268,91 @@ class CurrentProcessPyMOLAdapter:
         self.cmd.load(path, format="pse")
 
     def execute_pml(self, command: str) -> Any:
-        return self.cmd.do(command)
+        return _execute_pml_lines(self.cmd, command)
 
     def clear(self) -> None:
         self.cmd.delete("all")
+
+
+def _execute_pml_lines(cmd: Any, command: str) -> Any:
+    lines = [line for line in command.splitlines() if line.strip()]
+    result: Any = None
+    for line_number, line in enumerate(lines, start=1):
+        _take_pymol_feedback(cmd)
+        result, output = _execute_pml_line(cmd, line)
+        feedback = _take_pymol_feedback(cmd)
+        if (
+            _pml_result_is_error(result)
+            or any(_feedback_is_error(message) for message in feedback)
+            or any(_feedback_is_error(message) for message in output.splitlines())
+        ):
+            raise EngineError(
+                ErrorCategory.BACKEND_FAILURE,
+                "unsafe.execute_pml failed in the PyMOL backend",
+                {"operation": "unsafe.execute_pml", "line": line_number},
+            )
+    return result
+
+
+def _execute_pml_line(cmd: Any, command: str) -> tuple[Any, str]:
+    """Capture C-level feedback because PyMOL discards command failure status."""
+    result: Any = None
+    with _PML_OUTPUT_LOCK:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        saved_stdout = os.dup(1)
+        saved_stderr = os.dup(2)
+        try:
+            with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+                os.dup2(stdout.fileno(), 1)
+                os.dup2(stderr.fileno(), 2)
+                try:
+                    result = cmd.do(command)
+                finally:
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                    os.dup2(saved_stdout, 1)
+                    os.dup2(saved_stderr, 2)
+                stdout.seek(0)
+                stderr.seek(0)
+                stdout_output = stdout.read()
+                stderr_output = stderr.read()
+            _replay_pml_output(saved_stdout, stdout_output)
+            _replay_pml_output(saved_stderr, stderr_output)
+        finally:
+            os.close(saved_stdout)
+            os.close(saved_stderr)
+    output = stdout_output + b"\n" + stderr_output
+    return result, output.decode(errors="replace")
+
+
+def _replay_pml_output(file_descriptor: int, output: bytes) -> None:
+    remaining = memoryview(output)
+    try:
+        while remaining:
+            written = os.write(file_descriptor, remaining)
+            remaining = remaining[written:]
+    except OSError:
+        _LOGGER.debug("PyMOL output destination closed before replay")
+
+
+def _take_pymol_feedback(cmd: Any) -> list[str]:
+    get_feedback = getattr(cmd, "_get_feedback", None)
+    if not callable(get_feedback):
+        return []
+    feedback = get_feedback()
+    if not isinstance(feedback, list):
+        return []
+    return [str(message) for message in feedback]
+
+
+def _pml_result_is_error(result: Any) -> bool:
+    return isinstance(result, int) and not isinstance(result, bool) and result < 0
+
+
+def _feedback_is_error(message: str) -> bool:
+    prefix = message.lstrip().split(":", 1)[0]
+    return prefix == "Error" or prefix.endswith("-Error")
 
 
 def _render_cancelled_error() -> EngineError:
