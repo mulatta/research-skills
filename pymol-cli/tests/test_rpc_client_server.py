@@ -53,6 +53,28 @@ class FakeAdapter:
     def label_residues(self, selection: str) -> None:
         return None
 
+    def create_selection(self, name: str, expression: str) -> None:
+        return None
+
+    def show_ball_and_stick(
+        self, selection: str, stick_radius: float, sphere_scale: float
+    ) -> None:
+        return None
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> None:
+        return None
+
+    def set_background(self, color: str, opaque: bool) -> None:
+        return None
+
     def render_png(
         self, path: str, width: int, height: int, dpi: int, ray: bool
     ) -> None:
