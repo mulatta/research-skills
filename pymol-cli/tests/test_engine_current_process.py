@@ -74,7 +74,7 @@ class FakeCmd:
     def save(self, path: str, *, format: str | None = None) -> None:
         self.calls.append(("save", (path,), {"format": format}))
 
-    def do(self, command: str) -> str:
+    def do(self, command: str) -> Any:
         self.calls.append(("do", (command,), {}))
         return "ok"
 
@@ -286,3 +286,49 @@ def test_adapter_rejects_name_that_runtime_would_rewrite() -> None:
         adapter.load_structure("model.pdb", "future_keyword")
 
     assert not any(name == "load" for name, _args, _kwargs in cmd.calls)
+
+
+class _FeedbackCmd(FakeCmd):
+    def __init__(self) -> None:
+        super().__init__()
+        self.feedback: list[str] = []
+
+    def do(self, command: str) -> None:
+        self.calls.append(("do", (command,), {}))
+        if command == "bad command":
+            self.feedback.append("Parser-Error: invalid command")
+
+    def _get_feedback(self) -> list[str]:
+        feedback = self.feedback
+        self.feedback = []
+        return feedback
+
+
+def test_pml_execution_stops_after_feedback_error() -> None:
+    cmd = _FeedbackCmd()
+    adapter = CurrentProcessPyMOLAdapter(cmd=cmd)
+
+    with pytest.raises(EngineError) as exc_info:
+        adapter.execute_pml("good command\nbad command\nnever executed")
+
+    assert exc_info.value.details == {
+        "operation": "unsafe.execute_pml",
+        "line": 2,
+    }
+    assert [args[0] for name, args, _kwargs in cmd.calls if name == "do"] == [
+        "good command",
+        "bad command",
+    ]
+
+
+class _NegativeStatusCmd(FakeCmd):
+    def do(self, command: str) -> int:
+        self.calls.append(("do", (command,), {}))
+        return -1
+
+
+def test_pml_execution_rejects_negative_backend_status() -> None:
+    adapter = CurrentProcessPyMOLAdapter(cmd=_NegativeStatusCmd())
+
+    with pytest.raises(EngineError, match="PyMOL backend"):
+        adapter.execute_pml("bad command")
