@@ -26,6 +26,8 @@ def test_engine_commands_use_mode_specific_pymol_flags(
     assert bootstrap_path.name.endswith(".bootstrap.py")
     bootstrap = bootstrap_path.read_text()
     assert "start_current_process_background" in bootstrap
+    package_parent = Path(__file__).resolve().parents[1]
+    assert f"sys.path.insert(0, {str(package_parent)!r})" in bootstrap
     assert "instance_id=" in bootstrap
     assert "supervisor_pid=os.getppid()" in bootstrap
 
