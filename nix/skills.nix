@@ -7,5 +7,6 @@ _:
 #             (default: <name>). Package must carry `share/skills/<name>/`.
 #   extra   – additional home-manager module to merge into per-skill module.
 {
+  biomcp = { };
   pymol-cli = { };
 }
