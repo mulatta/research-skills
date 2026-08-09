@@ -1,0 +1,75 @@
+{
+  "skill_name": "pymol-cli",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Do not execute commands. Give the exact pymol-cli command plan to open the supplied 1crn.cif in the visible PyMOL GUI as crn and show the polymer as a cartoon.",
+      "expected_output": "A command plan that checks typed engine status, conditionally starts GUI mode, loads the supplied local CIF as `crn`, verifies the selection, and shows cartoon.",
+      "files": [
+        "evals/files/1crn.cif"
+      ],
+      "assertions": [
+        "Response contains `pymol-cli engine status` and makes `engine start` conditional on no reachable engine.",
+        "Response contains `pymol-cli structure load` with the supplied `1crn.cif` path and `--object crn`.",
+        "Response contains `pymol-cli scene show cartoon` with a selection containing both `crn` and `polymer`.",
+        "No executable command line in response invokes legacy `pymol-cli launch`, legacy `pymol-cli load`, or `pymol-cli unsafe command`."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Do not execute commands. Give the exact pymol-cli command plan for an already-open typed engine session to list objects and count atoms in chain A of object hb.",
+      "expected_output": "A command plan using typed object listing and atom counting without engine restart.",
+      "files": [],
+      "assertions": [
+        "Response contains `pymol-cli objects list`.",
+        "Response contains `pymol-cli atoms count` with a selection containing `hb` and `chain A`.",
+        "No executable command line in response invokes `engine start`, `launch`, or `unsafe command`."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Do not execute commands. Give the exact pymol-cli command plan to color chain A of hb cyan and save the current view as a 1600 by 1200 PNG at outputs/hb.png, including output verification.",
+      "expected_output": "A typed scene-color and render plan with explicit dimensions and a nonempty-PNG verification step.",
+      "files": [],
+      "assertions": [
+        "Response contains `pymol-cli scene color cyan` with a selection containing `hb` and `chain A`.",
+        "Response contains `pymol-cli render png outputs/hb.png --width 1600 --height 1200`.",
+        "No executable command line in response invokes `unsafe command`, legacy `do`, or legacy `script`.",
+        "Response includes a step that checks outputs/hb.png exists, is nonempty, or has PNG format."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Do not execute commands. Explain and give the safe pymol-cli plan when asked to restore example.pse downloaded from an online forum.",
+      "expected_output": "Refusal to restore until trust is established, with pickle risk and MCP exclusion explained.",
+      "files": [],
+      "assertions": [
+        "Response states that `.pse` or PyMOL sessions are pickle-backed or can execute malicious code.",
+        "Response explicitly says not to run `pymol-cli session restore` on the untrusted file.",
+        "Response states that MCP does not expose session restore."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Do not execute commands. Give the exact pymol-cli command plan to rotate the current molecule 30 degrees around the x axis.",
+      "expected_output": "A narrow unsafe fallback because typed rotate is unavailable.",
+      "files": [],
+      "assertions": [
+        "Response does not contain an invented `pymol-cli scene rotate` command.",
+        "Response contains exactly one narrow `pymol-cli unsafe command` whose PML rotates x by 30 degrees.",
+        "Response identifies rotate as missing from typed engine operations."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Do not execute commands. Give the exact pymol-cli command plan to send `bg_color white` to an already-running `pymol -R` session on localhost port 9123.",
+      "expected_output": "A legacy XML-RPC status check and command targeting explicit localhost port without launching another session.",
+      "files": [],
+      "assertions": [
+        "Response contains `pymol-cli status --host localhost --port 9123`.",
+        "Response contains `pymol-cli do --host localhost --port 9123` and `bg_color white`.",
+        "No executable command line in response invokes `engine start`, `pymol-cli launch`, or `unsafe command`."
+      ]
+    }
+  ]
+}
