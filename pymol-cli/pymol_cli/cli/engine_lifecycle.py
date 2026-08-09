@@ -96,7 +96,7 @@ def write_pymol_bootstrap(
         prefix=f".{descriptor_path.stem}.",
         suffix=".bootstrap.py",
     )
-    package_root = Path(__file__).resolve().parents[1]
+    package_root = Path(__file__).resolve().parents[2]
     function_name = (
         "start_current_process_background" if background else "serve_current_process"
     )
