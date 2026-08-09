@@ -36,6 +36,9 @@ class FakeCmd:
         self.calls.append(("count_atoms", (selection,), {}))
         return self.atom_count
 
+    def select(self, name: str, expression: str) -> None:
+        self.calls.append(("select", (name, expression), {}))
+
     def load(
         self,
         path: str,
@@ -59,6 +62,30 @@ class FakeCmd:
 
     def hide(self, representation: str, selection: str) -> None:
         self.calls.append(("hide", (representation, selection), {}))
+
+    def set(self, name: str, value: Any, selection: str | None = None) -> None:
+        args = (name, value) if selection is None else (name, value, selection)
+        self.calls.append(("set", args, {}))
+
+    def distance(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        *,
+        cutoff: float,
+        mode: int,
+    ) -> None:
+        self.calls.append(
+            (
+                "distance",
+                (name, selection1, selection2),
+                {"cutoff": cutoff, "mode": mode},
+            )
+        )
+
+    def bg_color(self, color: str) -> None:
+        self.calls.append(("bg_color", (color,), {}))
 
     def color(self, color: str, selection: str) -> None:
         self.calls.append(("color", (color, selection), {}))
@@ -332,3 +359,36 @@ def test_pml_execution_rejects_negative_backend_status() -> None:
 
     with pytest.raises(EngineError, match="PyMOL backend"):
         adapter.execute_pml("bad command")
+
+
+def test_typed_ligand_scene_primitives_use_scoped_pymol_calls() -> None:
+    cmd = FakeCmd()
+    adapter = CurrentProcessPyMOLAdapter(cmd=cmd)
+
+    adapter.create_selection("ligand_site", "prot and resn LIG")
+    adapter.show_ball_and_stick("ligand_site", 0.18, 0.25)
+    adapter.show_polar_contacts(
+        "ligand_contacts", "ligand_site", "pocket", 3.6, "black", 2.0
+    )
+    adapter.set_background("white", True)
+
+    assert cmd.calls == [
+        ("get_legal_name", ("ligand_site",), {}),
+        ("select", ("ligand_site", "prot and resn LIG"), {}),
+        ("show", ("sticks", "ligand_site"), {}),
+        ("show", ("spheres", "ligand_site"), {}),
+        ("set", ("stick_radius", 0.18, "ligand_site"), {}),
+        ("set", ("sphere_scale", 0.25, "ligand_site"), {}),
+        ("get_legal_name", ("ligand_contacts",), {}),
+        (
+            "distance",
+            ("ligand_contacts", "ligand_site", "pocket"),
+            {"cutoff": 3.6, "mode": 2},
+        ),
+        ("hide", ("labels", "ligand_contacts"), {}),
+        ("set", ("dash_color", "black", "ligand_contacts"), {}),
+        ("set", ("dash_width", 2.0, "ligand_contacts"), {}),
+        ("bg_color", ("white",), {}),
+        ("set", ("opaque_background", 1), {}),
+        ("set", ("ray_opaque_background", 1), {}),
+    ]

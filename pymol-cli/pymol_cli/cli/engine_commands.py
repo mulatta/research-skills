@@ -62,6 +62,12 @@ def cmd_atoms_count_engine(ns: argparse.Namespace) -> None:
     emit(result if ns.json else result["count"], use_json=ns.json)
 
 
+def cmd_selection_create_engine(ns: argparse.Namespace) -> None:
+    with connect_engine_client(ns) as client:
+        result = client.create_selection(ns.name, ns.expression)
+    emit(result if ns.json else result["name"], use_json=ns.json)
+
+
 def cmd_structure_load_engine(ns: argparse.Namespace) -> None:
     path = resolve_rpc_path(ns.path)
     with connect_engine_client(ns) as client:
@@ -102,6 +108,33 @@ def cmd_scene_zoom_engine(ns: argparse.Namespace) -> None:
 def cmd_scene_label_residues_engine(ns: argparse.Namespace) -> None:
     with connect_engine_client(ns) as client:
         result = client.label_residues(ns.selection)
+    emit(result if ns.json else result["revision"], use_json=ns.json)
+
+
+def cmd_scene_ball_and_stick_engine(ns: argparse.Namespace) -> None:
+    with connect_engine_client(ns) as client:
+        result = client.show_ball_and_stick(
+            ns.selection, ns.stick_radius, ns.sphere_scale
+        )
+    emit(result if ns.json else result["revision"], use_json=ns.json)
+
+
+def cmd_scene_polar_contacts_engine(ns: argparse.Namespace) -> None:
+    with connect_engine_client(ns) as client:
+        result = client.show_polar_contacts(
+            ns.name,
+            ns.selection1,
+            ns.selection2,
+            ns.cutoff,
+            ns.color,
+            ns.dash_width,
+        )
+    emit(result if ns.json else result["revision"], use_json=ns.json)
+
+
+def cmd_scene_background_engine(ns: argparse.Namespace) -> None:
+    with connect_engine_client(ns) as client:
+        result = client.set_background(ns.color, ns.opaque)
     emit(result if ns.json else result["revision"], use_json=ns.json)
 
 

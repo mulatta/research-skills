@@ -14,7 +14,7 @@ Use `pymol-cli` to control a local GUI session the user sees or an explicitly st
 - Start GUI mode by default. Use `pymol-cli engine start --headless` for CI, servers, or rendering-only work.
 - Prefer typed `structure`, `objects`, `atoms`, `scene`, `render`, and `session` commands.
 - Inspect objects and atom counts before mutating a selection whose contents are uncertain.
-- Use `pymol-cli unsafe command` only when no typed operation exists or user explicitly requests raw PML. Inspect exact command first. Require confirmation before code execution, filesystem or network access, or destructive behavior; never interpolate untrusted metadata into raw PML.
+- Use `pymol-cli unsafe command` only when no typed operation exists or user explicitly requests raw PML. Inspect exact command first. Require confirmation before code execution, filesystem or network access, or destructive behavior; never interpolate untrusted metadata into raw PML. Pass multiple PML commands as newline-delimited input or separate invocations; never join `label` or other expression-taking commands with semicolons.
 - Do not treat a downloaded `.pse` or `.psw` file as safe data. Session restore is trusted-local functionality backed by Python pickle.
 - Keep structure loads local and explicit. Typed loading accepts existing `.pdb`, `.ent`, `.cif`, and `.mmcif` files.
 - Keep engine and legacy XML-RPC connections on localhost. Use a non-local legacy host only when user explicitly supplies and trusts it; XML-RPC has no engine token authentication.
@@ -121,7 +121,7 @@ pymol-cli scene color slate 'prot and chain B'
 
 ### Use missing PyMOL operation
 
-Typed engine currently has no general rotate, orient, transparency, background, alignment, or spectrum operation. Use narrow raw PML only when needed:
+Typed engine currently has no general rotate, orient, transparency, alignment, or spectrum operation. Background color and opacity are typed through `scene background`. Use narrow raw PML only when needed:
 
 ```bash
 pymol-cli unsafe command 'rotate x, 30'
@@ -147,14 +147,20 @@ Read [security boundaries](references/security.md) before restoring sessions, lo
 ### Inspect a ligand pocket with typed selections
 
 ```bash
-pymol-cli atoms count 'prot and resn ATP' --json
-pymol-cli atoms count 'byres (prot and polymer within 4 of (prot and resn ATP))' --json
-pymol-cli scene show sticks 'byres (prot and polymer within 4 of (prot and resn ATP))'
-pymol-cli scene color yelloworange 'byres (prot and polymer within 4 of (prot and resn ATP))'
-pymol-cli scene zoom 'prot and resn ATP' --buffer 5
+pymol-cli selection create ligand_site 'prot and resn ATP'
+pymol-cli selection create ligand_interface   'byres (prot and polymer within 4 of ligand_site)'
+pymol-cli atoms count ligand_site --json
+pymol-cli atoms count ligand_interface --json
+pymol-cli scene ball-and-stick 'ligand_site or ligand_interface'
+pymol-cli scene color yellow ligand_site
+pymol-cli scene color orange ligand_interface
+pymol-cli scene label-residues ligand_interface
+pymol-cli scene polar-contacts ligand_contacts ligand_site ligand_interface   --cutoff 3.6 --color black
+pymol-cli scene background white
+pymol-cli scene zoom 'ligand_site or ligand_interface' --buffer 4
 ```
 
-Require nonzero ligand and pocket counts before styling. Use legacy `ligand-pocket` helper only against matching XML-RPC session.
+Require nonzero ligand and interface counts before styling. `polar-contacts` uses PyMOL mode 2 geometry and provides visualization evidence, not a biological interaction claim. If RCSB ligand metadata is empty, inspect coordinate residue names and typed atom counts rather than assuming no ligand. Use legacy `ligand-pocket` helper only against matching XML-RPC session.
 
 ## MCP
 

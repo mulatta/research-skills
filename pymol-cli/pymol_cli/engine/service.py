@@ -25,11 +25,13 @@ from pymol_cli.engine.models import (
     LoadResult,
     MutationResult,
     ObjectList,
+    SelectionResult,
     SessionSummary,
 )
 from pymol_cli.engine.validation import (
     require_text,
     validate_object_name,
+    validate_selection_name,
     validate_session_path,
     validate_structure_path,
 )
@@ -38,6 +40,9 @@ MAX_RENDER_WIDTH = 8192
 MAX_RENDER_HEIGHT = 8192
 MAX_RENDER_PIXELS = 64_000_000
 MAX_RENDER_DPI = 2400
+MAX_SCENE_SCALE = 10.0
+MAX_CONTACT_CUTOFF = 20.0
+MAX_DASH_WIDTH = 20.0
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 CAPABILITIES = (
@@ -47,11 +52,15 @@ CAPABILITIES = (
     "objects.list",
     "structure.load",
     "atoms.count",
+    "selection.create",
     "scene.show",
     "scene.hide",
     "scene.color",
     "scene.zoom",
     "scene.label_residues",
+    "scene.ball_and_stick",
+    "scene.polar_contacts",
+    "scene.background",
     "render.png",
     "session.save",
     "session.restore",
@@ -109,6 +118,25 @@ class EngineService:
         return AtomCount(
             selection=normalized_selection,
             count=count,
+            revision=self._revision,
+        )
+
+    def create_selection(self, name: str, expression: str) -> SelectionResult:
+        normalized_name = validate_selection_name(name)
+        normalized_expression = require_text(expression, "expression")
+        self._call_backend(
+            "selection.create",
+            lambda: self._adapter.create_selection(
+                normalized_name, normalized_expression
+            ),
+        )
+        self._revision += 1
+        atom_count = self._call_backend(
+            "atoms.count", lambda: self._adapter.count_atoms(normalized_name)
+        )
+        return SelectionResult(
+            name=normalized_name,
+            atom_count=atom_count,
             revision=self._revision,
         )
 
@@ -193,6 +221,80 @@ class EngineService:
         self._call_backend(
             "scene.label_residues",
             lambda: self._adapter.label_residues(normalized_selection),
+        )
+        self._revision += 1
+        return MutationResult(revision=self._revision)
+
+    def show_ball_and_stick(
+        self,
+        selection: str,
+        *,
+        stick_radius: float,
+        sphere_scale: float,
+    ) -> MutationResult:
+        normalized_selection = require_text(selection, "selection")
+        normalized_stick_radius = self._require_bounded_positive_float(
+            stick_radius, "stick_radius", MAX_SCENE_SCALE
+        )
+        normalized_sphere_scale = self._require_bounded_positive_float(
+            sphere_scale, "sphere_scale", MAX_SCENE_SCALE
+        )
+        self._call_backend(
+            "scene.ball_and_stick",
+            lambda: self._adapter.show_ball_and_stick(
+                normalized_selection,
+                normalized_stick_radius,
+                normalized_sphere_scale,
+            ),
+        )
+        self._revision += 1
+        return MutationResult(revision=self._revision)
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        *,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> MutationResult:
+        normalized_name = validate_selection_name(name)
+        normalized_selection1 = require_text(selection1, "selection1")
+        normalized_selection2 = require_text(selection2, "selection2")
+        normalized_cutoff = self._require_bounded_positive_float(
+            cutoff, "cutoff", MAX_CONTACT_CUTOFF
+        )
+        normalized_color = require_text(color, "color")
+        normalized_dash_width = self._require_bounded_positive_float(
+            dash_width, "dash_width", MAX_DASH_WIDTH
+        )
+        self._call_backend(
+            "scene.polar_contacts",
+            lambda: self._adapter.show_polar_contacts(
+                normalized_name,
+                normalized_selection1,
+                normalized_selection2,
+                normalized_cutoff,
+                normalized_color,
+                normalized_dash_width,
+            ),
+        )
+        self._revision += 1
+        return MutationResult(revision=self._revision)
+
+    def set_background(self, color: str, *, opaque: bool) -> MutationResult:
+        normalized_color = require_text(color, "color")
+        if not isinstance(opaque, bool):
+            raise EngineError(
+                ErrorCategory.INVALID_ARGUMENT,
+                "opaque must be a boolean",
+                {"argument": "opaque"},
+            )
+        self._call_backend(
+            "scene.background",
+            lambda: self._adapter.set_background(normalized_color, opaque),
         )
         self._revision += 1
         return MutationResult(revision=self._revision)
@@ -338,6 +440,28 @@ class EngineService:
             f"{name} must be a finite non-negative number",
             {"argument": name},
         )
+
+    @staticmethod
+    def _require_bounded_positive_float(
+        value: object, name: str, limit: float
+    ) -> float:
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            normalized = math.nan
+        else:
+            normalized = float(value)
+        if not math.isfinite(normalized) or normalized <= 0:
+            raise EngineError(
+                ErrorCategory.INVALID_ARGUMENT,
+                f"{name} must be a finite positive number",
+                {"argument": name},
+            )
+        if normalized > limit:
+            raise EngineError(
+                ErrorCategory.INVALID_ARGUMENT,
+                f"{name} exceeds the safety limit",
+                {"argument": name, "limit": limit},
+            )
+        return normalized
 
     @staticmethod
     def _require_bounded_positive_int(value: object, name: str, limit: int) -> int:

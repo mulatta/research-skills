@@ -181,40 +181,58 @@ def validate_structure_path(path: object) -> str:
 
 def validate_object_name(object_name: object) -> str:
     """Require an unambiguous object identifier safe in PyMOL selections."""
-    normalized = require_text(object_name, "object_name")
+    return _validate_name(object_name, "object_name")
+
+
+def validate_selection_name(name: object) -> str:
+    """Require an unambiguous named-selection or distance-object identifier."""
+    return _validate_name(name, "name")
+
+
+def _validate_name(value: object, argument: str) -> str:
+    normalized = require_text(value, argument)
     if (
         len(normalized) > MAX_OBJECT_NAME_LENGTH
         or _OBJECT_NAME_RE.fullmatch(normalized) is None
     ):
         raise EngineError(
             ErrorCategory.INVALID_ARGUMENT,
-            "object_name contains unsupported characters",
-            {"argument": "object_name"},
+            f"{argument} contains unsupported characters",
+            {"argument": argument},
         )
     if normalized.casefold() in _RESERVED_OBJECT_NAMES:
         raise EngineError(
             ErrorCategory.INVALID_ARGUMENT,
-            "object_name is reserved by PyMOL",
-            {"argument": "object_name"},
+            f"{argument} is reserved by PyMOL",
+            {"argument": argument},
         )
     return normalized
 
 
 def require_exact_runtime_object_name(cmd: Any, object_name: str) -> None:
     """Reject any name that this PyMOL runtime would silently rewrite."""
+    require_exact_runtime_name(
+        cmd, object_name, argument="object_name", operation="structure.load"
+    )
+
+
+def require_exact_runtime_name(
+    cmd: Any, name: str, *, argument: str, operation: str
+) -> None:
+    """Reject identifiers that this PyMOL runtime would silently rewrite."""
     try:
-        legal_name = cmd.get_legal_name(object_name)
+        legal_name = cmd.get_legal_name(name)
     except Exception as exc:
         raise EngineError(
             ErrorCategory.BACKEND_FAILURE,
-            "PyMOL could not validate object_name",
-            {"operation": "structure.load"},
+            f"PyMOL could not validate {argument}",
+            {"operation": operation},
         ) from exc
-    if not isinstance(legal_name, str) or legal_name != object_name:
+    if not isinstance(legal_name, str) or legal_name != name:
         raise EngineError(
             ErrorCategory.INVALID_ARGUMENT,
-            "PyMOL would rewrite object_name",
-            {"argument": "object_name"},
+            f"PyMOL would rewrite {argument}",
+            {"argument": argument},
         )
 
 

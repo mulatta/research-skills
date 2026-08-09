@@ -18,6 +18,7 @@ def test_cli_typed_workflow_uses_engine_descriptor(tmp_path: Path) -> None:
     structure.write_text(
         "ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00 20.00           N\n"
         "ATOM      2  CA  ALA A   1       1.500   0.000   0.000  1.00 20.00           C\n"
+        "HETATM    3  O1  LIG A 101       1.500   1.500   0.000  1.00 20.00           O\n"
         "END\n",
         encoding="utf-8",
     )
@@ -44,7 +45,54 @@ def test_cli_typed_workflow_uses_engine_descriptor(tmp_path: Path) -> None:
             str(descriptor),
             env=env,
         )
-        assert (loaded["object_name"], loaded["atom_count"]) == ("prot", 2)
+        assert (loaded["object_name"], loaded["atom_count"]) == ("prot", 3)
+
+        ligand = _run_json(
+            "selection",
+            "create",
+            "ligand_site",
+            "prot and resn LIG",
+            "--descriptor",
+            str(descriptor),
+            env=env,
+        )
+        assert (ligand["name"], ligand["atom_count"]) == ("ligand_site", 1)
+        interface = _run_json(
+            "selection",
+            "create",
+            "ligand_interface",
+            "byres (prot and polymer within 4 of ligand_site)",
+            "--descriptor",
+            str(descriptor),
+            env=env,
+        )
+        assert interface["atom_count"] == 2
+        _run_json(
+            "scene",
+            "ball-and-stick",
+            "ligand_site or ligand_interface",
+            "--descriptor",
+            str(descriptor),
+            env=env,
+        )
+        _run_json(
+            "scene",
+            "polar-contacts",
+            "ligand_contacts",
+            "ligand_site",
+            "ligand_interface",
+            "--descriptor",
+            str(descriptor),
+            env=env,
+        )
+        _run_json(
+            "scene",
+            "background",
+            "white",
+            "--descriptor",
+            str(descriptor),
+            env=env,
+        )
 
         shown = _run_json(
             "scene",
@@ -55,7 +103,7 @@ def test_cli_typed_workflow_uses_engine_descriptor(tmp_path: Path) -> None:
             str(descriptor),
             env=env,
         )
-        assert shown["revision"] == 2
+        assert shown["revision"] == 7
 
         rendered = _run_json(
             "render",
@@ -94,7 +142,7 @@ def test_cli_typed_workflow_uses_engine_descriptor(tmp_path: Path) -> None:
             str(descriptor),
             env=env,
         )
-        assert count["count"] == 2
+        assert count["count"] == 3
     finally:
         _run_cli(
             "engine", "stop", "--descriptor", str(descriptor), env=env, check=False
