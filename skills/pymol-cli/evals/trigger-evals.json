@@ -1,0 +1,82 @@
+[
+  {
+    "query": "Open ~/structures/4hhb.cif in PyMOL and color chain A cyan.",
+    "should_trigger": true
+  },
+  {
+    "query": "The PyMOL window is already open. Count atoms in resn HEM without restarting it.",
+    "should_trigger": true
+  },
+  {
+    "query": "Render the current PyMOL view to a 2400 x 1800 ray-traced PNG.",
+    "should_trigger": true
+  },
+  {
+    "query": "Show residues within 4 angstroms of ATP in the loaded structure.",
+    "should_trigger": true
+  },
+  {
+    "query": "Label CA atoms for residues 58 and 87 in chain A in PyMOL.",
+    "should_trigger": true
+  },
+  {
+    "query": "Save my current PyMOL session to ~/work/view.pse.",
+    "should_trigger": true
+  },
+  {
+    "query": "Start a headless PyMOL engine on this server and load model.pdb.",
+    "should_trigger": true
+  },
+  {
+    "query": "Run this PML file against my existing pymol -R session.",
+    "should_trigger": true
+  },
+  {
+    "query": "Show me which objects are currently loaded in PyMOL.",
+    "should_trigger": true
+  },
+  {
+    "query": "Make chain B a surface while leaving chain A as cartoon in PyMOL.",
+    "should_trigger": true
+  },
+  {
+    "query": "Extract the amino-acid sequence from 4hhb.pdb and return FASTA.",
+    "should_trigger": false
+  },
+  {
+    "query": "Find the UniProt annotations for human beta globin residues.",
+    "should_trigger": false
+  },
+  {
+    "query": "Search PubMed for papers about hemoglobin allostery.",
+    "should_trigger": false
+  },
+  {
+    "query": "Predict a structure for this protein sequence using AlphaFold.",
+    "should_trigger": false
+  },
+  {
+    "query": "Run molecular docking of this ligand against my receptor.",
+    "should_trigger": false
+  },
+  {
+    "query": "Crop whitespace from outputs/hb.png and convert it to WebP.",
+    "should_trigger": false
+  },
+  {
+    "query": "Write a PyMOL plugin in Python that adds a custom Qt panel.",
+    "should_trigger": false
+  },
+  {
+    "query": "Plot these RMSD values as a Matplotlib line chart.",
+    "should_trigger": false
+  },
+  {
+    "query": "Download the biological assembly metadata for PDB 4HHB.",
+    "should_trigger": false
+  },
+  {
+    "query": "Explain what the PyMOL GPL license allows in a commercial product.",
+    "should_trigger": false
+  }
+]
