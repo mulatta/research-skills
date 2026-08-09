@@ -19,6 +19,7 @@ from typing import Any, Protocol
 from pymol_cli.engine.cancellation import request_is_cancelled
 from pymol_cli.engine.errors import EngineError, ErrorCategory
 from pymol_cli.engine.validation import (
+    require_exact_runtime_name,
     require_exact_runtime_object_name,
     structure_format_for_path,
 )
@@ -75,6 +76,12 @@ class CurrentProcessPyMOLAdapter:
     def count_atoms(self, selection: str) -> int:
         return int(self.cmd.count_atoms(selection))
 
+    def create_selection(self, name: str, expression: str) -> None:
+        require_exact_runtime_name(
+            self.cmd, name, argument="name", operation="selection.create"
+        )
+        self.cmd.select(name, expression)
+
     def load_structure(self, path: str, object_name: str) -> None:
         require_exact_runtime_object_name(self.cmd, object_name)
         self.cmd.load(
@@ -102,6 +109,36 @@ class CurrentProcessPyMOLAdapter:
         )
         self.cmd.set("label_color", "black")
         self.cmd.set("label_size", 18)
+
+    def show_ball_and_stick(
+        self, selection: str, stick_radius: float, sphere_scale: float
+    ) -> None:
+        self.cmd.show("sticks", selection)
+        self.cmd.show("spheres", selection)
+        self.cmd.set("stick_radius", stick_radius, selection)
+        self.cmd.set("sphere_scale", sphere_scale, selection)
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> None:
+        require_exact_runtime_name(
+            self.cmd, name, argument="name", operation="scene.polar_contacts"
+        )
+        self.cmd.distance(name, selection1, selection2, cutoff=cutoff, mode=2)
+        self.cmd.hide("labels", name)
+        self.cmd.set("dash_color", color, name)
+        self.cmd.set("dash_width", dash_width, name)
+
+    def set_background(self, color: str, opaque: bool) -> None:
+        self.cmd.bg_color(color)
+        self.cmd.set("opaque_background", int(opaque))
+        self.cmd.set("ray_opaque_background", int(opaque))
 
     def render_png(
         self, path: str, width: int, height: int, dpi: int, ray: bool

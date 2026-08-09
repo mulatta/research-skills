@@ -170,6 +170,12 @@ class EngineClient:
     def list_objects(self) -> dict[str, Any]:
         return self._object_result("objects.list", self.call("objects.list"))
 
+    def create_selection(self, name: str, expression: str) -> dict[str, Any]:
+        return self._object_result(
+            "selection.create",
+            self.call("selection.create", {"name": name, "expression": expression}),
+        )
+
     def load_structure(self, path: str, object_name: str) -> dict[str, Any]:
         return self._object_result(
             "structure.load",
@@ -219,6 +225,51 @@ class EngineClient:
         return self._object_result(
             "scene.label_residues",
             self.call("scene.label_residues", {"selection": selection}),
+        )
+
+    def show_ball_and_stick(
+        self, selection: str, stick_radius: float, sphere_scale: float
+    ) -> dict[str, Any]:
+        return self._object_result(
+            "scene.ball_and_stick",
+            self.call(
+                "scene.ball_and_stick",
+                {
+                    "selection": selection,
+                    "stick_radius": stick_radius,
+                    "sphere_scale": sphere_scale,
+                },
+            ),
+        )
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> dict[str, Any]:
+        return self._object_result(
+            "scene.polar_contacts",
+            self.call(
+                "scene.polar_contacts",
+                {
+                    "name": name,
+                    "selection1": selection1,
+                    "selection2": selection2,
+                    "cutoff": cutoff,
+                    "color": color,
+                    "dash_width": dash_width,
+                },
+            ),
+        )
+
+    def set_background(self, color: str, opaque: bool) -> dict[str, Any]:
+        return self._object_result(
+            "scene.background",
+            self.call("scene.background", {"color": color, "opaque": opaque}),
         )
 
     def render_png(

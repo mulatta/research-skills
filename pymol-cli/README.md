@@ -89,6 +89,17 @@ pymol-cli scene zoom prot --buffer 4
 pymol-cli scene label-residues 'prot and name CA'
 ```
 
+Build a ligand-interface view without raw PML:
+
+```bash
+pymol-cli selection create ligand_site 'prot and resn ATP'
+pymol-cli selection create ligand_interface   'byres (prot and polymer within 4 of ligand_site)'
+pymol-cli scene ball-and-stick 'ligand_site or ligand_interface'
+pymol-cli scene polar-contacts ligand_contacts ligand_site ligand_interface
+pymol-cli scene background white
+pymol-cli scene zoom 'ligand_site or ligand_interface' --buffer 4
+```
+
 Render or save state:
 
 ```bash

@@ -23,6 +23,8 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"test-payload"
 class RecordingAdapter:
     def __init__(self) -> None:
         self.loaded: list[tuple[str, str]] = []
+        self.selections: list[tuple[str, str]] = []
+        self.scene_calls: list[tuple[str, tuple[Any, ...]]] = []
         self.rendered: list[str] = []
         self.saved: list[str] = []
         self.restored: list[str] = []
@@ -35,6 +37,9 @@ class RecordingAdapter:
 
     def count_atoms(self, selection: str) -> int:
         return 1
+
+    def create_selection(self, name: str, expression: str) -> None:
+        self.selections.append((name, expression))
 
     def load_structure(self, path: str, object_name: str) -> None:
         self.loaded.append((path, object_name))
@@ -53,6 +58,32 @@ class RecordingAdapter:
 
     def label_residues(self, selection: str) -> None:
         return None
+
+    def show_ball_and_stick(
+        self, selection: str, stick_radius: float, sphere_scale: float
+    ) -> None:
+        self.scene_calls.append(
+            ("ball_and_stick", (selection, stick_radius, sphere_scale))
+        )
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> None:
+        self.scene_calls.append(
+            (
+                "polar_contacts",
+                (name, selection1, selection2, cutoff, color, dash_width),
+            )
+        )
+
+    def set_background(self, color: str, opaque: bool) -> None:
+        self.scene_calls.append(("background", (color, opaque)))
 
     def render_png(
         self, path: str, width: int, height: int, dpi: int, ray: bool
@@ -339,3 +370,62 @@ def test_backend_exceptions_become_safe_engine_errors() -> None:
     assert error.category is ErrorCategory.BACKEND_FAILURE
     assert error.details == {"operation": "objects.list"}
     assert "sensitive backend detail" not in error.message
+
+
+def test_ligand_scene_primitives_are_typed_and_revisioned() -> None:
+    adapter = RecordingAdapter()
+    engine = EngineService(adapter)
+
+    selection = engine.create_selection("ligand_site", "prot and resn LIG")
+    ball = engine.show_ball_and_stick(
+        "ligand_site", stick_radius=0.18, sphere_scale=0.25
+    )
+    contacts = engine.show_polar_contacts(
+        "ligand_contacts",
+        "ligand_site",
+        "pocket",
+        cutoff=3.6,
+        color="black",
+        dash_width=2.0,
+    )
+    background = engine.set_background("white", opaque=True)
+
+    assert (selection.name, selection.atom_count, selection.revision) == (
+        "ligand_site",
+        1,
+        1,
+    )
+    assert (ball.revision, contacts.revision, background.revision) == (2, 3, 4)
+    assert adapter.selections == [("ligand_site", "prot and resn LIG")]
+    assert adapter.scene_calls == [
+        ("ball_and_stick", ("ligand_site", 0.18, 0.25)),
+        (
+            "polar_contacts",
+            ("ligand_contacts", "ligand_site", "pocket", 3.6, "black", 2.0),
+        ),
+        ("background", ("white", True)),
+    ]
+
+
+@pytest.mark.parametrize("name", ["all", "bad name", "x;delete_all"])
+def test_named_selection_rejects_ambiguous_names(name: str) -> None:
+    adapter = RecordingAdapter()
+
+    with pytest.raises(EngineError) as exc_info:
+        EngineService(adapter).create_selection(name, "all")
+
+    assert exc_info.value.category is ErrorCategory.INVALID_ARGUMENT
+    assert adapter.selections == []
+
+
+@pytest.mark.parametrize("value", [0.0, -1.0, math.nan, math.inf, True, 11.0])
+def test_ball_and_stick_rejects_unsafe_scales(value: float) -> None:
+    adapter = RecordingAdapter()
+
+    with pytest.raises(EngineError) as exc_info:
+        EngineService(adapter).show_ball_and_stick(
+            "all", stick_radius=value, sphere_scale=0.25
+        )
+
+    assert exc_info.value.category is ErrorCategory.INVALID_ARGUMENT
+    assert adapter.scene_calls == []

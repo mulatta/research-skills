@@ -19,6 +19,7 @@ pymol-cli engine stop [--descriptor PATH]
 pymol-cli structure load FILE --object NAME
 pymol-cli objects list --json
 pymol-cli atoms count SELECTION --json
+pymol-cli selection create NAME EXPRESSION
 ```
 
 Typed structure loading accepts existing local `.pdb`, `.ent`, `.cif`, and `.mmcif` files. Object names are validated against PyMOL legal-name behavior and reserved identifiers.
@@ -31,9 +32,13 @@ pymol-cli scene hide REPRESENTATION SELECTION
 pymol-cli scene color COLOR SELECTION
 pymol-cli scene zoom SELECTION [--buffer FLOAT]
 pymol-cli scene label-residues SELECTION
+pymol-cli scene ball-and-stick SELECTION [--stick-radius FLOAT] [--sphere-scale FLOAT]
+pymol-cli scene polar-contacts NAME SELECTION1 SELECTION2 \
+  [--cutoff FLOAT] [--color COLOR] [--dash-width FLOAT]
+pymol-cli scene background COLOR [--transparent]
 ```
 
-Current typed coverage does not include general background, orient, rotate, transparency, alignment, RMSD, spectrum, named selections, or scene storage. Do not invent commands for these operations.
+`polar-contacts` uses PyMOL distance mode 2. Treat its dashed geometry as a visualization aid, not evidence of a biological interaction by itself. Current typed coverage does not include general orient, rotate, transparency, alignment, RMSD, spectrum, arbitrary atom-label expressions, or scene storage. Do not invent commands for these operations.
 
 ## Rendering
 
@@ -64,7 +69,7 @@ Session restore is CLI-only trusted-local behavior and is not part of MCP surfac
 pymol-cli unsafe command 'ONE PML COMMAND'
 ```
 
-Use only for missing typed operations or explicit raw PML request. MCP never exposes this operation.
+Use only for missing typed operations or explicit raw PML request. MCP never exposes this operation. Use separate invocations or newline-delimited PML for multiple commands. Semicolon chaining is unsafe for commands such as `label` whose expression parser consumes the remainder of the line.
 
 ## Common attach options
 

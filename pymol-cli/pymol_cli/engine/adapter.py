@@ -14,6 +14,8 @@ class PyMOLAdapter(Protocol):
 
     def count_atoms(self, selection: str) -> int: ...
 
+    def create_selection(self, name: str, expression: str) -> None: ...
+
     def load_structure(self, path: str, object_name: str) -> None: ...
 
     def show_representation(self, representation: str, selection: str) -> None: ...
@@ -25,6 +27,22 @@ class PyMOLAdapter(Protocol):
     def zoom_selection(self, selection: str, buffer: float) -> None: ...
 
     def label_residues(self, selection: str) -> None: ...
+
+    def show_ball_and_stick(
+        self, selection: str, stick_radius: float, sphere_scale: float
+    ) -> None: ...
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> None: ...
+
+    def set_background(self, color: str, opaque: bool) -> None: ...
 
     def render_png(
         self, path: str, width: int, height: int, dpi: int, ray: bool

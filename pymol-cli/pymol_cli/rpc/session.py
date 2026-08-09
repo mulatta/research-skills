@@ -93,11 +93,15 @@ class RpcSession:
             "objects.list": self._objects_list,
             "structure.load": self._structure_load,
             "atoms.count": self._atoms_count,
+            "selection.create": self._selection_create,
             "scene.show": self._scene_show,
             "scene.hide": self._scene_hide,
             "scene.color": self._scene_color,
             "scene.zoom": self._scene_zoom,
             "scene.label_residues": self._scene_label_residues,
+            "scene.ball_and_stick": self._scene_ball_and_stick,
+            "scene.polar_contacts": self._scene_polar_contacts,
+            "scene.background": self._scene_background,
             "render.png": self._render_png,
             "session.save": self._session_save,
             "session.restore": self._session_restore,
@@ -169,6 +173,12 @@ class RpcSession:
         selection = _require_string_param(request, "selection")
         return self._engine.count_atoms(selection)
 
+    def _selection_create(self, request: JsonRpcRequest) -> Any:
+        return self._engine.create_selection(
+            _require_string_param(request, "name"),
+            _require_string_param(request, "expression"),
+        )
+
     def _scene_show(self, request: JsonRpcRequest) -> Any:
         return self._engine.show_representation(
             _require_string_param(request, "representation"),
@@ -197,6 +207,29 @@ class RpcSession:
 
     def _scene_label_residues(self, request: JsonRpcRequest) -> Any:
         return self._engine.label_residues(_require_string_param(request, "selection"))
+
+    def _scene_ball_and_stick(self, request: JsonRpcRequest) -> Any:
+        return self._engine.show_ball_and_stick(
+            _require_string_param(request, "selection"),
+            stick_radius=_require_number_param(request, "stick_radius"),
+            sphere_scale=_require_number_param(request, "sphere_scale"),
+        )
+
+    def _scene_polar_contacts(self, request: JsonRpcRequest) -> Any:
+        return self._engine.show_polar_contacts(
+            _require_string_param(request, "name"),
+            _require_string_param(request, "selection1"),
+            _require_string_param(request, "selection2"),
+            cutoff=_require_number_param(request, "cutoff"),
+            color=_require_string_param(request, "color"),
+            dash_width=_require_number_param(request, "dash_width"),
+        )
+
+    def _scene_background(self, request: JsonRpcRequest) -> Any:
+        return self._engine.set_background(
+            _require_string_param(request, "color"),
+            opaque=_require_bool_param(request, "opaque"),
+        )
 
     def _render_png(self, request: JsonRpcRequest) -> Any:
         return self._engine.render_png(
@@ -237,6 +270,13 @@ def _require_int_param(request: JsonRpcRequest, name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise JsonRpcError(INVALID_PARAMS, f"{name} must be an integer", request.id)
     return value
+
+
+def _require_number_param(request: JsonRpcRequest, name: str) -> float:
+    value = request.params.get(name)
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise JsonRpcError(INVALID_PARAMS, f"{name} must be a number", request.id)
+    return float(value)
 
 
 def _require_bool_param(request: JsonRpcRequest, name: str) -> bool:

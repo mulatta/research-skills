@@ -15,11 +15,15 @@ from pymol_cli.cli.engine_commands import (
     cmd_atoms_count_engine,
     cmd_objects_list_engine,
     cmd_render_png_engine,
+    cmd_scene_background_engine,
+    cmd_scene_ball_and_stick_engine,
     cmd_scene_color_engine,
     cmd_scene_hide_engine,
     cmd_scene_label_residues_engine,
+    cmd_scene_polar_contacts_engine,
     cmd_scene_show_engine,
     cmd_scene_zoom_engine,
+    cmd_selection_create_engine,
     cmd_session_clear,
     cmd_session_restore,
     cmd_session_save,
@@ -117,6 +121,16 @@ def build_parser() -> argparse.ArgumentParser:
     add_engine_attach_args(atoms_count)
     atoms_count.set_defaults(func=cmd_atoms_count_engine)
 
+    selection = sub.add_parser("selection", help="manage named selections")
+    selection_sub = selection.add_subparsers(dest="selection_command", required=True)
+    selection_create = selection_sub.add_parser(
+        "create", help="create or replace a named selection"
+    )
+    selection_create.add_argument("name")
+    selection_create.add_argument("expression")
+    add_engine_attach_args(selection_create)
+    selection_create.set_defaults(func=cmd_selection_create_engine)
+
     structure = sub.add_parser("structure", help="load structures through the engine")
     structure_sub = structure.add_subparsers(dest="structure_command", required=True)
     structure_load = structure_sub.add_parser("load", help="load a structure file")
@@ -159,6 +173,42 @@ def build_parser() -> argparse.ArgumentParser:
     scene_label_residues.add_argument("selection")
     add_engine_attach_args(scene_label_residues)
     scene_label_residues.set_defaults(func=cmd_scene_label_residues_engine)
+    scene_ball_and_stick = scene_sub.add_parser(
+        "ball-and-stick", help="show a scoped ball-and-stick representation"
+    )
+    scene_ball_and_stick.add_argument("selection")
+    scene_ball_and_stick.add_argument(
+        "--stick-radius", type=positive_finite_float, default=0.18
+    )
+    scene_ball_and_stick.add_argument(
+        "--sphere-scale", type=positive_finite_float, default=0.25
+    )
+    add_engine_attach_args(scene_ball_and_stick)
+    scene_ball_and_stick.set_defaults(func=cmd_scene_ball_and_stick_engine)
+    scene_polar_contacts = scene_sub.add_parser(
+        "polar-contacts", help="show dashed polar-contact geometry"
+    )
+    scene_polar_contacts.add_argument("name")
+    scene_polar_contacts.add_argument("selection1")
+    scene_polar_contacts.add_argument("selection2")
+    scene_polar_contacts.add_argument(
+        "--cutoff", type=positive_finite_float, default=3.6
+    )
+    scene_polar_contacts.add_argument("--color", default="black")
+    scene_polar_contacts.add_argument(
+        "--dash-width", type=positive_finite_float, default=2.0
+    )
+    add_engine_attach_args(scene_polar_contacts)
+    scene_polar_contacts.set_defaults(func=cmd_scene_polar_contacts_engine)
+    scene_background = scene_sub.add_parser(
+        "background", help="set scene and rendered PNG background"
+    )
+    scene_background.add_argument("color")
+    scene_background.add_argument(
+        "--transparent", action="store_false", dest="opaque", default=True
+    )
+    add_engine_attach_args(scene_background)
+    scene_background.set_defaults(func=cmd_scene_background_engine)
 
     session = sub.add_parser("session", help="inspect or mutate the engine session")
     session_sub = session.add_subparsers(dest="session_command", required=True)

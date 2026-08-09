@@ -29,6 +29,10 @@ class FakeClient:
         self.calls.append(("count_atoms", (selection,)))
         return {"selection": selection, "count": 10, "revision": 1}
 
+    def create_selection(self, name: str, expression: str) -> dict[str, Any]:
+        self.calls.append(("create_selection", (name, expression)))
+        return {"name": name, "atom_count": 2, "revision": 1}
+
     def load_structure(self, path: str, object_name: str) -> dict[str, Any]:
         self.calls.append(("load_structure", (path, object_name)))
         return {"path": path, "object_name": object_name, "revision": 1}
@@ -59,6 +63,35 @@ class FakeClient:
 
     def label_residues(self, selection: str) -> dict[str, Any]:
         self.calls.append(("label_residues", (selection,)))
+        return {"revision": 1}
+
+    def show_ball_and_stick(
+        self, selection: str, stick_radius: float, sphere_scale: float
+    ) -> dict[str, Any]:
+        self.calls.append(
+            ("show_ball_and_stick", (selection, stick_radius, sphere_scale))
+        )
+        return {"revision": 1}
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> dict[str, Any]:
+        self.calls.append(
+            (
+                "show_polar_contacts",
+                (name, selection1, selection2, cutoff, color, dash_width),
+            )
+        )
+        return {"revision": 1}
+
+    def set_background(self, color: str, opaque: bool) -> dict[str, Any]:
+        self.calls.append(("set_background", (color, opaque)))
         return {"revision": 1}
 
     def render_png(
@@ -138,6 +171,10 @@ def test_mcp_tool_surface_excludes_unsafe_operations_and_bounds_render() -> None
         "session_save",
         "atoms_count",
         "scene_label_residues",
+        "selection_create",
+        "scene_ball_and_stick",
+        "scene_polar_contacts",
+        "scene_background",
         "render_png",
     } <= tools.keys()
     schema = tools["render_png"].input_schema
@@ -149,6 +186,51 @@ def test_mcp_tool_surface_excludes_unsafe_operations_and_bounds_render() -> None
         8192,
     )
     assert (properties["dpi"]["minimum"], properties["dpi"]["maximum"]) == (1, 2400)
+
+
+def test_mcp_ligand_scene_tools_map_to_typed_client_calls() -> None:
+    fake = FakeClient()
+    server = McpServer(lambda: fake)
+    initialize(server)
+
+    call_tool(
+        server,
+        "selection_create",
+        {"name": "ligand_site", "expression": "prot and resn LIG"},
+        request_id=20,
+    )
+    call_tool(
+        server,
+        "scene_ball_and_stick",
+        {"selection": "ligand_site"},
+        request_id=21,
+    )
+    call_tool(
+        server,
+        "scene_polar_contacts",
+        {
+            "name": "ligand_contacts",
+            "selection1": "ligand_site",
+            "selection2": "pocket",
+        },
+        request_id=22,
+    )
+    call_tool(
+        server,
+        "scene_background",
+        {"color": "white"},
+        request_id=23,
+    )
+
+    assert fake.calls == [
+        ("create_selection", ("ligand_site", "prot and resn LIG")),
+        ("show_ball_and_stick", ("ligand_site", 0.18, 0.25)),
+        (
+            "show_polar_contacts",
+            ("ligand_contacts", "ligand_site", "pocket", 3.6, "black", 2.0),
+        ),
+        ("set_background", ("white", True)),
+    ]
 
 
 def test_mcp_initialization_lifecycle_and_protocol_version() -> None:

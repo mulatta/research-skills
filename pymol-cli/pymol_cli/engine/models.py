@@ -34,6 +34,13 @@ class AtomCount:
 
 
 @dataclass(frozen=True)
+class SelectionResult:
+    name: str
+    atom_count: int
+    revision: int
+
+
+@dataclass(frozen=True)
 class SessionSummary:
     object_names: list[str]
     atom_count: int

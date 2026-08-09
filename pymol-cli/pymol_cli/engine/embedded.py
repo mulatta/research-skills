@@ -92,6 +92,9 @@ class EmbeddedPyMOLAdapter:
     def count_atoms(self, selection: str) -> int:
         return int(self.cmd.count_atoms(selection))
 
+    def create_selection(self, name: str, expression: str) -> None:
+        self._require_renderer().create_selection(name, expression)
+
     def load_structure(self, path: str, object_name: str) -> None:
         require_exact_runtime_object_name(self.cmd, object_name)
         self.cmd.load(
@@ -119,6 +122,29 @@ class EmbeddedPyMOLAdapter:
         )
         self.cmd.set("label_color", "black")
         self.cmd.set("label_size", 18)
+
+    def show_ball_and_stick(
+        self, selection: str, stick_radius: float, sphere_scale: float
+    ) -> None:
+        self._require_renderer().show_ball_and_stick(
+            selection, stick_radius, sphere_scale
+        )
+
+    def show_polar_contacts(
+        self,
+        name: str,
+        selection1: str,
+        selection2: str,
+        cutoff: float,
+        color: str,
+        dash_width: float,
+    ) -> None:
+        self._require_renderer().show_polar_contacts(
+            name, selection1, selection2, cutoff, color, dash_width
+        )
+
+    def set_background(self, color: str, opaque: bool) -> None:
+        self._require_renderer().set_background(color, opaque)
 
     def render_png(
         self, path: str, width: int, height: int, dpi: int, ray: bool
