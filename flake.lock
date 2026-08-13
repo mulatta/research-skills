@@ -1,5 +1,28 @@
 {
   "nodes": {
+    "bioinformatics-toolkits": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786600939,
+        "narHash": "sha256-t+yyjOhZ6pRAqXPvCL46ZzS1FtAm57TkEfv4Yqz3XCY=",
+        "owner": "SBEE-Lab",
+        "repo": "bioinformatics-toolkits",
+        "rev": "47d4c86b2db74f2ce0e3dd1400db31e99be2c6e1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SBEE-Lab",
+        "repo": "bioinformatics-toolkits",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1786106723,
@@ -18,6 +41,7 @@
     },
     "root": {
       "inputs": {
+        "bioinformatics-toolkits": "bioinformatics-toolkits",
         "nixpkgs": "nixpkgs",
         "treefmt-nix": "treefmt-nix"
       }

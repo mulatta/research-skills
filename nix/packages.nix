@@ -1,5 +1,5 @@
-{ callPackage }:
+{ biomcp, callPackage }:
 {
-  biomcp = callPackage ../biomcp/package.nix { };
+  inherit biomcp;
   pymol-cli = callPackage ../pymol-cli { };
 }
