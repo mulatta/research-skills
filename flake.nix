@@ -5,6 +5,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    bioinformatics-toolkits.url = "github:SBEE-Lab/bioinformatics-toolkits";
+    bioinformatics-toolkits.inputs.nixpkgs.follows = "nixpkgs";
+    bioinformatics-toolkits.inputs.treefmt-nix.follows = "treefmt-nix";
   };
 
   outputs =
@@ -38,7 +42,12 @@
       );
     in
     {
-      packages = eachSystem ({ pkgs, ... }: pkgs.callPackages ./nix/packages.nix { });
+      packages = eachSystem (
+        { pkgs, system, ... }:
+        pkgs.callPackages ./nix/packages.nix {
+          biomcp = inputs.bioinformatics-toolkits.packages.${system}.biomcp;
+        }
+      );
 
       checks = eachSystem (
         { system, ... }:
