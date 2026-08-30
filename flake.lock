@@ -10,11 +10,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787400829,
-        "narHash": "sha256-O269ATRqmbxPcl8vUi8F0gUEQl58/U5JxKj6i06AE1k=",
+        "lastModified": 1787773679,
+        "narHash": "sha256-IKyhCD4IPzLMb5Ey9nnpJJ5TYSyyc/JczfgGE1Zwt58=",
         "owner": "SBEE-Lab",
         "repo": "bioinformatics-toolkits",
-        "rev": "299c69eb7057e8cd93ec23dec17d2b465ae3d393",
+        "rev": "e9a2f41d92af4478b105580e043c94391be4324c",
         "type": "github"
       },
       "original": {
